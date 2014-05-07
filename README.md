@@ -2,7 +2,7 @@
 
 Extracts all rails model to one UML file written in USE (UML-based Specification Environment).
 
-
+Currently is only ActiveRecord supported. Wrappers for Mongoid and others are planned.
 
 ## Installation
 
