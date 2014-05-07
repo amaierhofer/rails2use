@@ -1,6 +1,7 @@
 # Rails2use
 
-TODO: Write a gem description
+converts all rails model to a UML file written in USE (UML-based Specification Environment).
+
 
 ## Installation
 
