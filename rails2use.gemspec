@@ -7,9 +7,9 @@ Gem::Specification.new do |spec|
   spec.name          = "rails2use"
   spec.version       = Rails2use::VERSION
   spec.authors       = ["Manuel Dudda"]
-  spec.email         = ["manuel@pixoona.de"]
-  spec.summary       = "converts all rails model to a UML file written in USE (UML-based Specification Environment)"
-  spec.description   = ""
+  spec.email         = ["dudda@redpeppix.de"]
+  spec.summary       = "Extracts all rails model to one UML file written in USE (UML-based Specification Environment)."
+  spec.description   = "Currently is only ActiveRecord supported. Wrappers for Mongoid and others are planned."
   spec.homepage      = ""
   spec.license       = "MIT"
 

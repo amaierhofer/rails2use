@@ -1,6 +1,7 @@
 # Rails2use
 
-converts all rails model to a UML file written in USE (UML-based Specification Environment).
+Extracts all rails model to one UML file written in USE (UML-based Specification Environment).
+
 
 
 ## Installation
@@ -19,7 +20,13 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+Just do:
+
+require 'Rails2use'
+
+Rails2use.extract! # default will extract the use file to rails_project/doc/gen/uml/output.use
+
+Rails2use.extract! file: Rails.root.join('doc', 'gen', 'api', 'uml', 'apiv2.use') # the folder structure will be automtically generated
 
 ## Contributing
 
