@@ -22,11 +22,11 @@ Or install it yourself as:
 
 Just do:
 
-require 'Rails2use'
+    require 'Rails2use'
 
-Rails2use.extract! # default will extract the use file to rails_project/doc/gen/uml/output.use
+    Rails2use.extract! # default will extract the use file to rails_project/doc/gen/uml/output.use
 
-Rails2use.extract! file: Rails.root.join('doc', 'gen', 'api', 'uml', 'apiv2.use') # the folder structure will be automtically generated
+    Rails2use.extract! file: Rails.root.join('doc', 'gen', 'api', 'uml', 'apiv2.use') # the folder structure will be automtically generated
 
 ## Contributing
 
