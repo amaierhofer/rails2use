@@ -96,12 +96,14 @@ module Rails2use
         all_instances.each_with_index do |instance, i|
           f.write "!create #{model.name.underscore}#{i}:#{model.name}\n"
           model.attribute_names.each do |attribute|
-            value = instance.send attribute
-            if value.present?
-              if value.is_a?(Numeric) || value.is_a?(TrueClass) || value.is_a?(FalseClass)
-                f.write "!set #{model.name.underscore}#{i}.#{attribute} := #{instance.send(attribute)}\n"
-              else
-                f.write "!set #{model.name.underscore}#{i}.#{attribute} := '#{instance.send(attribute).to_s}'\n"
+            if use_types.has_key?(model.columns_hash[attribute].type.to_s) && !attribute.in?(attribute_blacklist)
+              value = instance.send attribute
+              if value.present?
+                if value.is_a?(Numeric) || value.is_a?(TrueClass) || value.is_a?(FalseClass)
+                  f.write "!set #{model.name.underscore}#{i}.#{attribute} := #{instance.send(attribute)}\n"
+                else
+                  f.write "!set #{model.name.underscore}#{i}.#{attribute} := '#{instance.send(attribute).to_s}'\n"
+                end
               end
             end
           end
