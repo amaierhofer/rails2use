@@ -94,14 +94,14 @@ module Rails2use
       all_models.each do |model|
         all_instances = model.unscoped.all
         all_instances.each_with_index do |instance, i|
-          f.write "#{model.name.underscore}#{i}:#{model.name}"
+          f.write "create #{model.name.underscore}#{i}:#{model.name}\n"
           model.attribute_names.each do |attribute|
             value = instance.send attribute
             if value.present?
               if value.is_a?(String)
-                f.write "!set #{model.name.underscore}#{i}.#{attribute} := '#{instance.send(attribute)}'"
+                f.write "!set #{model.name.underscore}#{i}.#{attribute} := '#{instance.send(attribute)}'\n"
               else
-                f.write "!set #{model.name.underscore}#{i}.#{attribute} := #{instance.send(attribute)}"
+                f.write "!set #{model.name.underscore}#{i}.#{attribute} := #{instance.send(attribute)}\n"
               end
             end
           end
