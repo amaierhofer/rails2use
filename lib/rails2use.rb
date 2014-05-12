@@ -99,9 +99,9 @@ module Rails2use
             value = instance.send attribute
             if value.present?
               if value.is_a?(String)
-                f.write "!set #{model.name.underscore}#{i}.#{attribute} := '#{instance.get_attribute(attribute)}'"
+                f.write "!set #{model.name.underscore}#{i}.#{attribute} := '#{instance.send(attribute)}'"
               else
-                f.write "!set #{model.name.underscore}#{i}.#{attribute} := #{instance.get_attribute(attribute)}"
+                f.write "!set #{model.name.underscore}#{i}.#{attribute} := #{instance.send(attribute)}"
               end
             end
           end
