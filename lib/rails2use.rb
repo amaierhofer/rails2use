@@ -98,10 +98,10 @@ module Rails2use
           model.attribute_names.each do |attribute|
             value = instance.send attribute
             if value.present?
-              if value.is_a?(String)
-                f.write "!set #{model.name.underscore}#{i}.#{attribute} := '#{instance.send(attribute)}'\n"
-              else
+              unless value.is_a?(String)
                 f.write "!set #{model.name.underscore}#{i}.#{attribute} := #{instance.send(attribute)}\n"
+              else
+                f.write "!set #{model.name.underscore}#{i}.#{attribute} := '#{instance.send(attribute)}'\n"
               end
             end
           end
