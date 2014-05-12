@@ -90,6 +90,23 @@ module Rails2use
         end
       end
       f.write model_associations
+
+      all_models.each do |model|
+        all_instances = model.unscoped.all
+        all_instances.each_with_index do |instance, i|
+          f.write "#{model.name.underscore}#{i}:#{model.name}"
+          model.attribute_names.each do |attribute|
+            value = instance.send attribute
+            if value.present?
+              if value.is_a?(String)
+                f.write "!set #{model.name.underscore}#{i}.#{attribute} := '#{instance.get_attribute(attribute)}'"
+              else
+                f.write "!set #{model.name.underscore}#{i}.#{attribute} := #{instance.get_attribute(attribute)}"
+              end
+            end
+          end
+        end
+      end
     end
 
   end
