@@ -90,7 +90,10 @@ module Rails2use
         end
       end
       f.write model_associations
+    end
 
+
+    File.open(options[:file]+'_instances.txt', 'w') do |f|
       all_models.each do |model|
         all_instances = model.unscoped.all
         all_instances.each_with_index do |instance, i|
