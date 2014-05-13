@@ -31,7 +31,7 @@ module Rails2use
     subclasses = {}
 
     model_blacklist = [Doorkeeper::AccessGrant, Doorkeeper::AccessToken, Doorkeeper::Application]
-    Rails.application.eager_load! unless Rails.configuration.cache_classes
+    Rails.application.eager_load! #unless Rails.configuration.cache_classes
     all_models = (ActiveRecord::Base.descendants - model_blacklist)
 
     attribute_blacklist = %w(model)
@@ -45,14 +45,15 @@ module Rails2use
         model.reflect_on_all_associations(:belongs_to).each do |association|
           #extract polymorphic classes and determine abstract class status
           class_name = association.name.to_s.camelcase
-          if association.options.has_key?(:polymorphic) && !class_name.in?(abstract_classes)
-            f.write "abstract class #{class_name}\n\nend\n\n"
-            abstract_classes << class_name
+          if association.options.has_key?(:polymorphic)
+            if !class_name.in?(abstract_classes)
+              f.write "abstract class #{class_name}\n\nend\n\n"
+              abstract_classes << class_name
+            end
             subclasses[model.name] = [class_name]
           end
         end
       end
-
 
       model_associations = "-- associations\n\n"
       all_models.each do |model|
@@ -70,7 +71,7 @@ module Rails2use
         #has_many
         model.reflect_on_all_associations(:has_many).each do |association|
           #extract associations, also belongs_to are covered by this feature
-          model_associations << "association #{(model.name.to_s+association.name.to_s).camelcase} between\n"
+          model_associations << "association #{(model.name.to_s+'_'+association.name.to_s).camelcase} between\n"
           model_associations << "\t#{model.name}[1] role #{(association.name.to_s+model.name).underscore}\n"
           class_name = association.options.has_key?(:as) && association.options[:as].to_s.camelcase.in?(abstract_classes) ? association.options[:as].to_s.camelcase : association.class_name
           model_associations << "\t#{class_name}[*] role #{association.name}\nend\n\n"
@@ -83,7 +84,7 @@ module Rails2use
         model.reflect_on_all_associations(:has_one).each do |association|
           #skip thorugh-associations
           unless association.options.has_key?(:through)
-            model_associations << "association #{(model.name.to_s+association.name.to_s).camelcase} between\n"
+            model_associations << "association #{(model.name.to_s+'_'+association.name.to_s).camelcase} between\n"
             model_associations << "\t#{model.name}[1] role #{(association.name.to_s+model.name).underscore}\n"
             model_associations << "\t#{association.class_name}[1] role #{association.name}\nend\n\n"
           end
@@ -92,24 +93,39 @@ module Rails2use
       f.write model_associations
     end
 
-
+    all_instances = []
     File.open(options[:file].to_s.gsub(/\.use\/?$/, '_instances.txt'), 'w') do |f|
       all_models.each do |model|
-        all_instances = model.unscoped.all
-        all_instances.each_with_index do |instance, i|
-          f.write "!create #{model.name.underscore}#{i}:#{model.name}\n"
+        all_instances_by_model = model.unscoped.all
+        all_instances += all_instances_by_model
+        all_instances_by_model.each do |instance|
+          instance_name = "#{model.name.underscore}#{instance.id.to_s}"
+          f.write "!create #{instance_name}:#{model.name}\n"
           model.attribute_names.each do |attribute|
             if use_types.has_key?(model.columns_hash[attribute].type.to_s) && !attribute.in?(attribute_blacklist)
               value = instance.send attribute
               if value.present?
                 if value.is_a?(Numeric) || value.is_a?(TrueClass) || value.is_a?(FalseClass)
-                  f.write "!set #{model.name.underscore}#{i}.#{attribute} := #{instance.send(attribute)}\n"
+                  f.write "!set #{instance_name}.#{attribute} := #{instance.send(attribute)}\n"
                 else
-                  f.write "!set #{model.name.underscore}#{i}.#{attribute} := '#{instance.send(attribute).to_s}'\n"
+                  f.write "!set #{instance_name}.#{attribute} := '#{instance.send(attribute).to_s}'\n"
                 end
               end
             end
           end
+        end
+      end
+      all_instances.each do |instance|
+        model = instance.class
+        instance_name = "#{model.name.underscore}#{instance.id.to_s}"
+        model.reflect_on_all_associations(:has_many).each do |association|
+          association_name = (model.name.to_s+'_'+association.name.to_s).camelcase
+          foreign_instances = instance.send association.name
+          foreign_instances = [foreign_instances] unless foreign_instances.is_a?(Enumerable)
+          foreign_instances.each do |foreign_instance|
+            f.write "!insert (#{instance_name}, #{foreign_instance.class.to_s.underscore+foreign_instance.id.to_s}) into #{association_name}\n"
+          end
+          class_name = association.options.has_key?(:as) && association.options[:as].to_s.camelcase.in?(abstract_classes) ? association.options[:as].to_s.camelcase : association.class_name
         end
       end
     end
