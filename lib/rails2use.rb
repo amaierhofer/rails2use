@@ -1,6 +1,8 @@
-require "rails2use/version"
+require 'rails2use/version'
+require 'use_writer'
 
 module Rails2use
+  attr_accessor :writer
 
   def self.extract!(options={})
     Rails2use.extract(options)
@@ -8,6 +10,7 @@ module Rails2use
 
   def self.extract(options={})
     options[:file] ||= Rails.root.join('doc', 'uml', 'output.use')
+    options[:writer] ||= 'UseWriter'
 
     path = Rails.root.join ''
     sub_paths = (options[:file].to_s+'/').gsub(path.to_s, '').split('/')
@@ -16,16 +19,7 @@ module Rails2use
       path = path.join subdir
       Dir.mkdir(path.dirname) unless Dir.exists?(path.dirname)
     end
-    path
-
-    use_types = {
-        'integer' => 'Integer',
-        'double' => 'Real',
-        'float' => 'Real',
-        'boolean' => 'Boolean',
-        'string' => 'String'
-    }
-
+    #path
 
     abstract_classes = []
     subclasses = {}
@@ -36,97 +30,84 @@ module Rails2use
 
     attribute_blacklist = %w(model)
 
-    File.open(options[:file], 'w') do |f|
-      f.write "model Paij\n\n-- classes\n\n" #write head
-      #abstract classes first
-      all_models.each do |model|
+    @writer = options[:writer].constantize.new options[:file]
+    @writer.write_head
+    #abstract classes first
+    all_models.each do |model|
 
-        #belongs_to
-        model.reflect_on_all_associations(:belongs_to).each do |association|
-          #extract polymorphic classes and determine abstract class status
-          class_name = association.name.to_s.camelcase
-          if association.options.has_key?(:polymorphic)
-            if !class_name.in?(abstract_classes)
-              f.write "abstract class #{class_name}\n\nend\n\n"
-              abstract_classes << class_name
-            end
-            subclasses[model.name] = [class_name]
+      #belongs_to
+      model.reflect_on_all_associations(:belongs_to).each do |association|
+        #extract polymorphic classes and determine abstract class status
+        class_name = association.name.to_s.camelcase
+        if association.options.has_key?(:polymorphic)
+          if !class_name.in?(abstract_classes)
+            @writer.write_abstract_class class_name
+            abstract_classes << class_name
           end
+          subclasses[model.name] = [class_name]
         end
       end
-
-      model_associations = "-- associations\n\n"
-      all_models.each do |model|
-
-        #def_abstract_class = abstract_classes.include?(model.name) ? 'abstract ' : ''
-        def_super_classes = subclasses.has_key?(model.name) ? " < #{subclasses[model.name].join(',')}" : ''
-
-        model_attributes = ''
-        model.attribute_names.each do |attribute|
-          model_attributes << " #{attribute} : #{use_types[model.columns_hash[attribute].type.to_s]}\n" if use_types.has_key?(model.columns_hash[attribute].type.to_s) && !attribute.in?(attribute_blacklist)
-        end
-        f.write "class #{model.name}#{def_super_classes}\nattributes\n#{model_attributes}\nend\n\n"
-
-
-        #has_many
-        model.reflect_on_all_associations(:has_many).each do |association|
-          #extract associations, also belongs_to are covered by this feature
-          model_associations << "association #{(model.name.to_s+'_'+association.name.to_s).camelcase} between\n"
-          model_associations << "\t#{model.name}[1] role #{(association.name.to_s+model.name).underscore}\n"
-          class_name = association.options.has_key?(:as) && association.options[:as].to_s.camelcase.in?(abstract_classes) ? association.options[:as].to_s.camelcase : association.class_name
-          model_associations << "\t#{class_name}[*] role #{association.name}\nend\n\n"
-        end
-
-
-        #has_and_belongs_to_many
-
-        #has_one
-        model.reflect_on_all_associations(:has_one).each do |association|
-          #skip thorugh-associations
-          unless association.options.has_key?(:through)
-            model_associations << "association #{(model.name.to_s+'_'+association.name.to_s).camelcase} between\n"
-            model_associations << "\t#{model.name}[1] role #{(association.name.to_s+model.name).underscore}\n"
-            model_associations << "\t#{association.class_name}[1] role #{association.name}\nend\n\n"
-          end
-        end
-      end
-      f.write model_associations
     end
 
-    all_instances = []
-    File.open(options[:file].to_s.gsub(/\.use\/?$/, '_instances.txt'), 'w') do |f|
-      all_models.each do |model|
-        all_instances_by_model = model.unscoped.all
-        all_instances += all_instances_by_model
-        all_instances_by_model.each do |instance|
-          instance_name = "#{model.name.underscore}#{instance.id.to_s}"
-          f.write "!create #{instance_name}:#{model.name}\n"
-          model.attribute_names.each do |attribute|
-            if use_types.has_key?(model.columns_hash[attribute].type.to_s) && !attribute.in?(attribute_blacklist)
-              value = instance.send attribute
-              if value.present?
-                if value.is_a?(Numeric) || value.is_a?(TrueClass) || value.is_a?(FalseClass)
-                  f.write "!set #{instance_name}.#{attribute} := #{instance.send(attribute)}\n"
-                else
-                  f.write "!set #{instance_name}.#{attribute} := '#{instance.send(attribute).to_s}'\n"
-                end
-              end
-            end
-          end
+    all_models.each do |model|
+      model_associations = {:has_many => {}, :has_one => {}}
+      #def_abstract_class = abstract_classes.include?(model.name) ? 'abstract ' : ''
+      def_super_classes = subclasses.has_key?(model.name) ? " < #{subclasses[model.name].join(',')}" : ''
+
+      model_attributes = ''
+      attribute_names = model.try(:attribute_names) rescue model.columns.map { |c| c.name }
+      attribute_names.each do |attribute|
+        model_attributes << " #{attribute} : #{@writer.types[model.columns_hash[attribute].type.to_s]}\n" if @writer.types.has_key?(model.columns_hash[attribute].type.to_s) && !attribute.in?(attribute_blacklist)
+      end
+
+      #has_many
+      model.reflect_on_all_associations(:has_many).each do |association|
+        #extract associations, also belongs_to are covered by this feature
+        class_name = association.options.has_key?(:as) && association.options[:as].to_s.camelcase.in?(abstract_classes) ? association.options[:as].to_s.camelcase : association.class_name
+        model_associations[:has_many][(model.name.to_s+'_'+association.name.to_s).camelcase] = {class_name: model.name, role_name: (association.name.to_s+model.name).underscore, foreign_class_name: class_name, foreign_role_name: association.name}
+      end
+
+      #has_and_belongs_to_many
+
+      #has_one
+      model.reflect_on_all_associations(:has_one).each do |association|
+        #skip thorugh-associations
+        unless association.options.has_key?(:through)
+          model_associations[:has_one][(model.name.to_s+'_'+association.name.to_s).camelcase] = {class_name: model.name, role_name: (association.name.to_s+model.name).underscore, foreign_class_name: association.class_name, foreign_role_name: association.name}
         end
       end
-      all_instances.each do |instance|
-        model = instance.class
+      @writer.write_class model.name, def_super_classes, model_attributes, model_associations
+    end
+    @writer.write_class_end
+
+    all_instances = []
+    all_models.each do |model|
+      all_instances_by_model = model.unscoped.all
+      all_instances += all_instances_by_model
+      all_instances_by_model.each do |instance|
         instance_name = "#{model.name.underscore}#{instance.id.to_s}"
-        model.reflect_on_all_associations(:has_many).each do |association|
-          association_name = (model.name.to_s+'_'+association.name.to_s).camelcase
-          foreign_instances = instance.send association.name
-          foreign_instances = [foreign_instances] unless foreign_instances.is_a?(Enumerable)
-          foreign_instances.each do |foreign_instance|
-            f.write "!insert (#{instance_name}, #{foreign_instance.class.to_s.underscore+foreign_instance.id.to_s}) into #{association_name}\n"
+        attributes = {}
+        attribute_names = model.try(:attribute_names) rescue model.columns.map { |c| c.name }
+        attribute_names.each do |attribute|
+          if @writer.types.has_key?(model.columns_hash[attribute].type.to_s) && !attribute.in?(attribute_blacklist)
+            value = instance.send attribute
+            attributes[attribute] = value if value.present?
           end
-          class_name = association.options.has_key?(:as) && association.options[:as].to_s.camelcase.in?(abstract_classes) ? association.options[:as].to_s.camelcase : association.class_name
         end
+        @writer.write_instance instance_name, model.name, attributes
+      end
+    end
+    all_instances.each do |instance|
+      model = instance.class
+      instance_name = "#{model.name.underscore}#{instance.id.to_s}"
+      model.reflect_on_all_associations(:has_many).each do |association|
+        association_name = (model.name.to_s+'_'+association.name.to_s).camelcase
+        foreign_instances = instance.send association.name
+        foreign_instances = [foreign_instances] unless foreign_instances.is_a?(Enumerable)
+        foreign_instances.each do |foreign_instance|
+          @writer.write_association association_name, instance_name, foreign_instance.class.to_s.underscore+foreign_instance.id.to_s
+        end
+        #class_name = association.options.has_key?(:as) && association.options[:as].to_s.camelcase.in?(abstract_classes) ? association.options[:as].to_s.camelcase : association.class_name
       end
     end
     true
