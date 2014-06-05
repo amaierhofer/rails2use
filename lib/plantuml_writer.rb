@@ -1,5 +1,5 @@
 class PlantumlWriter
-  attr_accessor :types, file
+  attr_accessor :types, :file
 
   def initialize(file_name)
     @file = File.open(file_name, 'w')
@@ -16,6 +16,10 @@ class PlantumlWriter
 
   def write_head
     @file.write "@startuml\n\n" #write head
+  end
+
+  def write_foot
+    @file.write "@enduml"
   end
 
   def write_abstract_class(class_name)
@@ -44,21 +48,23 @@ class PlantumlWriter
   end
 
   def write_instance(instance_name, class_name, attributes=[], associations={})
-    @instances_file.write "!create #{instance_name}:#{class_name}\n"
+    @instances_file.write "object #{instance_name}{\n"
     attributes.each do |attribute, value|
       if value.is_a?(Numeric) || value.is_a?(TrueClass) || value.is_a?(FalseClass)
-        @instances_file.write "!set #{instance_name}.#{attribute} := #{instance.send(attribute)}\n"
+        @instances_file.write "#{attribute} = #{value}\n"
       else
-        @instances_file.write "!set #{instance_name}.#{attribute} := '#{instance.send(attribute).to_s}'\n"
+        @instances_file.write "#{attribute} = '#{value}'\n"
       end
     end
+    @instances_file.write "}\n\n"
     associations.each do |x|
 
     end
+
   end
 
   def write_association(association_name, instance_name, foreign_instance_name)
-    @instances_file.write "!insert (#{instance_name}, #{foreign_instance_name}) into #{association_name}\n"
+    @instances_file.write "#{instance_name} *-- #{foreign_instance_name}\n"
   end
 
 end

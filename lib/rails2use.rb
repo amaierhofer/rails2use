@@ -1,5 +1,6 @@
 require 'rails2use/version'
 require 'use_writer'
+require 'plantuml_writer'
 
 module Rails2use
   attr_accessor :writer
@@ -24,7 +25,7 @@ module Rails2use
     abstract_classes = []
     subclasses = {}
 
-    model_blacklist = [Doorkeeper::AccessGrant, Doorkeeper::AccessToken, Doorkeeper::Application]
+    model_blacklist = defined?(Doorkeeper) ? [Doorkeeper::AccessGrant, Doorkeeper::AccessToken, Doorkeeper::Application] : []
     Rails.application.eager_load! #unless Rails.configuration.cache_classes
     all_models = (ActiveRecord::Base.descendants - model_blacklist)
 
@@ -40,7 +41,7 @@ module Rails2use
         #extract polymorphic classes and determine abstract class status
         class_name = association.name.to_s.camelcase
         if association.options.has_key?(:polymorphic)
-          if !class_name.in?(abstract_classes)
+          if !abstract_classes.include?(class_name)
             @writer.write_abstract_class class_name
             abstract_classes << class_name
           end
@@ -57,13 +58,13 @@ module Rails2use
       model_attributes = ''
       attribute_names = model.try(:attribute_names) rescue model.columns.map { |c| c.name }
       attribute_names.each do |attribute|
-        model_attributes << " #{attribute} : #{@writer.types[model.columns_hash[attribute].type.to_s]}\n" if @writer.types.has_key?(model.columns_hash[attribute].type.to_s) && !attribute.in?(attribute_blacklist)
+        model_attributes << " #{attribute} : #{@writer.types[model.columns_hash[attribute].type.to_s]}\n" if @writer.types.has_key?(model.columns_hash[attribute].type.to_s) && !attribute_blacklist.include?(attribute)
       end
 
       #has_many
       model.reflect_on_all_associations(:has_many).each do |association|
         #extract associations, also belongs_to are covered by this feature
-        class_name = association.options.has_key?(:as) && association.options[:as].to_s.camelcase.in?(abstract_classes) ? association.options[:as].to_s.camelcase : association.class_name
+        class_name = association.options.has_key?(:as) && abstract_classes.include?(association.options[:as].to_s.camelcase) ? association.options[:as].to_s.camelcase : association.class_name
         model_associations[:has_many][(model.name.to_s+'_'+association.name.to_s).camelcase] = {class_name: model.name, role_name: (association.name.to_s+model.name).underscore, foreign_class_name: class_name, foreign_role_name: association.name}
       end
 
@@ -89,7 +90,7 @@ module Rails2use
         attributes = {}
         attribute_names = model.try(:attribute_names) rescue model.columns.map { |c| c.name }
         attribute_names.each do |attribute|
-          if @writer.types.has_key?(model.columns_hash[attribute].type.to_s) && !attribute.in?(attribute_blacklist)
+          if @writer.types.has_key?(model.columns_hash[attribute].type.to_s) && !attribute_blacklist.include?(attribute)
             value = instance.send attribute
             attributes[attribute] = value if value.present?
           end
