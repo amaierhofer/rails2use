@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.authors = ["Manuel Dudda"]
   spec.email = ["dudda@redpeppix.de"]
   spec.summary = "Extracts all rails model to one UML file written in USE (UML-based Specification Environment)."
-  spec.description = "Currently is only ActiveRecord supported. Wrappers for Mongoid and others are planned."
+  spec.description = "Currently only ActiveRecord is supported. Wrappers for Mongoid and others are planned."
   spec.homepage = ""
   spec.license = "MIT"
 

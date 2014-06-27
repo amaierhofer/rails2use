@@ -1,10 +1,14 @@
-class PlantumlWriter
+class UseWriter
+  def self.suffix
+    'use'
+  end
+
   attr_accessor :types, :file
 
   def initialize(file_name)
-    @file = File.open(file_name, 'w')
+    @filename = file_name
     @associations = ""
-    @instances_file = File.open(file_name.to_s.gsub(/\.use\/?$/, '_instances.puml'), 'w')
+    @object_filename = file_name.to_s.gsub(/\..*\/?$/, '_instances.use_cmd')
     @types = {
         'integer' => 'Integer',
         'double' => 'Real',
@@ -14,12 +18,24 @@ class PlantumlWriter
     }
   end
 
-  def write_head
-    @file.write "@startuml\n\n" #write head
+  def close
+    @file.try :close
+    @instances_file.try :close
   end
 
-  def write_foot
-    @file.write "@enduml"
+  def write_head(type=:class)
+    case type
+      when :object then
+        @instances_file = File.open(@object_filename, 'w')
+      else
+        @file = File.open(@filename, 'w')
+        @file.write "model #{Rails.application.class.parent_name}\n\n-- classes\n\n" #write head
+    end
+
+  end
+
+  def write_foot(type=:class)
+
   end
 
   def write_abstract_class(class_name)
@@ -27,7 +43,7 @@ class PlantumlWriter
   end
 
   def write_class(class_name, super_classes="", attributes="", associations={})
-    @file.write "class #{class_name}#{super_classes}\n{\n#{attributes}\n}\n\n"
+    @file.write "class #{class_name}#{super_classes}\nattributes\n#{attributes}\nend\n\n"
 
     associations[:has_many].each do |name, values|
       @associations << "association #{name} between\n"
@@ -48,23 +64,21 @@ class PlantumlWriter
   end
 
   def write_instance(instance_name, class_name, attributes=[], associations={})
-    @instances_file.write "object #{instance_name}{\n"
+    @instances_file.write "!create #{instance_name}:#{class_name}\n"
     attributes.each do |attribute, value|
       if value.is_a?(Numeric) || value.is_a?(TrueClass) || value.is_a?(FalseClass)
-        @instances_file.write "#{attribute} = #{value}\n"
+        @instances_file.write "!set #{instance_name}.#{attribute} := #{value.to_s}\n"
       else
-        @instances_file.write "#{attribute} = '#{value}'\n"
+        @instances_file.write "!set #{instance_name}.#{attribute} := '#{value.to_s}'\n"
       end
     end
-    @instances_file.write "}\n\n"
     associations.each do |x|
 
     end
-
   end
 
   def write_association(association_name, instance_name, foreign_instance_name)
-    @instances_file.write "#{instance_name} *-- #{foreign_instance_name}\n"
+    @instances_file.write "!insert (#{instance_name}, #{foreign_instance_name}) into #{association_name}\n"
   end
 
 end

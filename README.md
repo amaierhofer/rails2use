@@ -20,7 +20,19 @@ Or install it yourself as:
 
 ## Usage
 
-Just do:
+Running Rake-Task:
+
+    rake doc:uml FORMAT=use|plantuml TYPE=object,class
+    
+Options:
+
+- FORMAT: use | plantuml (default = plantuml)
+- TYPE: object | class (default = object,class)
+- OUTPUT: *filename* (default = doc/output.puml)
+
+You can use multiple options in a comma separated way
+
+Using in Ruby:
 
     require 'Rails2use'
 
