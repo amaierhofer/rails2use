@@ -46,11 +46,12 @@ class PlantumlWriter
   end
 
   def write_abstract_class(class_name)
-    @file.write "abstract class #{class_name}\n\nend\n\n"
+    @file.write "abstract class #{class_name}\n"
   end
 
   def write_class(class_name, super_classes="", attributes="", associations={})
-    @file.write "class #{class_name}#{super_classes} {\n#{attributes}\n}\n\n"
+    @file.write "#{super_classes} <|- #{class_name}"
+    @file.write "class #{class_name} {\n#{attributes}\n}\n\n"
 
     associations[:has_many].each do |name, values|
       @associations << values[:class_name]+ ' "1" o-- "*" '+ values[:foreign_class_name] + "\n"
