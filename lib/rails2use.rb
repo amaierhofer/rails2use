@@ -60,7 +60,7 @@ module Rails2use
     all_models.each do |model|
       model_associations = {:has_many => {}, :has_one => {}}
       #def_abstract_class = abstract_classes.include?(model.name) ? 'abstract ' : ''
-      def_super_classes = subclasses.has_key?(model.name) ? " < #{subclasses[model.name].join(',')}" : ''
+      def_super_classes = subclasses.has_key?(model.name) ? subclasses[model.name].join(',') : ''
 
       model_attributes = ''
       attribute_names = model.try(:attribute_names) rescue model.columns.map { |c| c.name }

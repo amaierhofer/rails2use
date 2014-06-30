@@ -43,6 +43,7 @@ class UseWriter
   end
 
   def write_class(class_name, super_classes="", attributes="", associations={})
+    super_classes = " < #{super_classes}" unless super_classes.blank?
     @file.write "class #{class_name}#{super_classes}\nattributes\n#{attributes}\nend\n\n"
 
     associations[:has_many].each do |name, values|

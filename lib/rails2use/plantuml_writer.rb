@@ -50,7 +50,7 @@ class PlantumlWriter
   end
 
   def write_class(class_name, super_classes="", attributes="", associations={})
-    @file.write "#{super_classes} <|- #{class_name}"
+    @file.write "#{super_classes} <|- #{class_name}\n" unless super_classes.blank?
     @file.write "class #{class_name} {\n#{attributes}\n}\n\n"
 
     associations[:has_many].each do |name, values|
