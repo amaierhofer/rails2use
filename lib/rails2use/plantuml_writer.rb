@@ -32,7 +32,7 @@ class PlantumlWriter
                @file = File.open(@filename, 'w')
                @file
            end
-    file.write "@startuml\n\n" #write head
+    file.write "@startuml\nleft to right direction\n\n" #write head
   end
 
   def write_foot(type=:class)
