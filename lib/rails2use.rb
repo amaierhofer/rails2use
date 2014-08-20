@@ -113,12 +113,14 @@ module Rails2use
       all_instances.each do |instance|
         model = instance.class
         instance_name = "#{model.name.underscore}#{instance.id.to_s}"
-        model.reflect_on_all_associations(:has_many).each do |association|
-          association_name = (model.name.to_s+'_'+association.name.to_s).camelcase
-          foreign_instances = instance.send association.name
-          foreign_instances = [foreign_instances] unless foreign_instances.is_a?(Enumerable)
-          foreign_instances.each do |foreign_instance|
-            @writer.write_association association_name, instance_name, foreign_instance.class.to_s.underscore+foreign_instance.id.to_s
+        (model.reflect_on_all_associations(:has_one) + model.reflect_on_all_associations(:has_many)).each do |association|
+          unless association.options.keys.include?(:through)
+            association_name = (model.name.to_s+'_'+association.name.to_s).camelcase
+            foreign_instances = instance.send association.name
+            foreign_instances = [foreign_instances] unless foreign_instances.is_a?(Enumerable)
+            foreign_instances.compact.each do |foreign_instance|
+              @writer.write_association association_name, instance_name, foreign_instance.class.to_s.underscore+foreign_instance.id.to_s
+            end
           end
           #class_name = association.options.has_key?(:as) && association.options[:as].to_s.camelcase.in?(abstract_classes) ? association.options[:as].to_s.camelcase : association.class_name
         end
