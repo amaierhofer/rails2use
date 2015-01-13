@@ -1,0 +1,16 @@
+# This is the configuration used to check the rubocop source code.
+
+AllCops:
+  Exclude:
+    - 'Guardfile'
+    - 'rails2use.gemspec'
+
+
+Metrics/LineLength:
+  Max: 380
+  # To make it possible to copy or click on URIs in the code, we allow lines
+  # contaning a URI to be longer than Max.
+  AllowURI: true
+  URISchemes:
+    - http
+    - https

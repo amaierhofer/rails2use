@@ -1,3 +1,6 @@
+[![Gem Version](https://badge.fury.io/rb/rails2use.svg)](http://badge.fury.io/rb/rails2use)
+travis
+[![Code Climate](https://codeclimate.com/github/manuel84/rails2use/badges/gpa.svg)](https://codeclimate.com/github/manuel84/rails2use)
 # Rails2use
 
 Extracts all rails model to one UML file written in USE (UML-based Specification Environment).

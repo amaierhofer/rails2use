@@ -1,17 +1,16 @@
 namespace :doc do
-
   desc 'Generates UML diagrams.'
-  task :uml => :environment do
+  task uml: :environment do
     puts 'Generating ...'
     options = {}
     options[:file] = ENV['OUTPUT'] if ENV['OUTPUT']
     options[:writer] = case ENV['FORMAT']
-                         when /plant(_)?(uml)?/
-                           'PlantumlWriter'
-                         when /use(_)?(uml)?/
-                           'UseWriter'
-                         else
-                           'PlantumlWriter'
+                       when /plant(_)?(uml)?/
+                         'PlantumlWriter'
+                       when /use(_)?(uml)?/
+                         'UseWriter'
+                       else
+                         'PlantumlWriter'
                        end
 
     options[:type] = ENV['TYPE'] ? ENV['TYPE'] : 'class'
@@ -21,5 +20,4 @@ namespace :doc do
     puts "uml diagrams: #{options[:type]}"
     puts "output written to #{File.split(file)[0]}."
   end
-
 end

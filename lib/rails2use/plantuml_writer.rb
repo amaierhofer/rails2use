@@ -1,3 +1,4 @@
+# plantuml http://plantuml.sourceforge.net/
 class PlantumlWriter
   def self.suffix
     'puml'
@@ -8,7 +9,7 @@ class PlantumlWriter
   def initialize(file_name)
     @filename = file_name
     @object_filename = file_name.to_s.gsub(/\..*\/?$/, '_instances.puml')
-    @associations = ""
+    @associations = ''
     @types = {
         'integer' => 'Integer',
         'double' => 'Real',
@@ -23,24 +24,25 @@ class PlantumlWriter
     @instances_file.try :close
   end
 
-  def write_head(type=:class)
+  def write_head(type = :class)
     file = case type
-             when :object then
-               @instances_file = File.open(@object_filename, 'w')
-               @instances_file
-             else
-               @file = File.open(@filename, 'w')
-               @file
+           when :object then
+             @instances_file = File.open(@object_filename, 'w')
+             @instances_file
+           else
+             @file = File.open(@filename, 'w')
+             @file
            end
-    file.write "@startuml\nleft to right direction\n\n" #write head
+    # write head
+    file.write "@startuml\nleft to right direction\n\n"
   end
 
-  def write_foot(type=:class)
+  def write_foot(type = :class)
     file = case type
-             when :object then
-               @instances_file
-             else
-               @file
+           when :object then
+             @instances_file
+           else
+             @file
            end
     file.write "\n@enduml"
   end
@@ -49,21 +51,20 @@ class PlantumlWriter
     @file.write "abstract class #{class_name}\n"
   end
 
-  def write_class(class_name, super_classes="", attributes="", associations={})
+  def write_class(class_name, super_classes = '', attributes = '', associations = {})
     @file.write "#{super_classes} <|- #{class_name}\n" unless super_classes.blank?
     @file.write "class #{class_name} {\n#{attributes}\n}\n\n"
 
-    associations[:has_many].each do |name, values|
-      @associations << values[:class_name]+ ' "1" o-- "*" '+ values[:foreign_class_name] + "\n"
+    associations[:has_many].each do |_name, values|
+      @associations << values[:class_name] + ' "1" o-- "*" ' + values[:foreign_class_name] + "\n"
 
-      #@associations << "association #{name} between\n"
-      #@associations << "\t#{values[:class_name]}[1] role #{values[:role_name]}\n"
-      #@associations << "\t#{values[:foreign_class_name]}[*] role #{values[:foreign_role_name]}\nend\n\n"
+      # @associations << "association #{name} between\n"
+      # @associations << "\t#{values[:class_name]}[1] role #{values[:role_name]}\n"
+      # @associations << "\t#{values[:foreign_class_name]}[*] role #{values[:foreign_role_name]}\nend\n\n"
     end
 
-
-    associations[:has_one].each do |name, values|
-      @associations << values[:class_name]+ ' "1" o-- "1" '+ values[:foreign_class_name] + "\n"
+    associations[:has_one].each do |_name, values|
+      @associations << values[:class_name] + ' "1" o-- "1" ' + values[:foreign_class_name] + "\n"
     end
   end
 
@@ -71,7 +72,7 @@ class PlantumlWriter
     @file.write @associations
   end
 
-  def write_instance(instance_name, class_name, attributes=[], associations={})
+  def write_instance(instance_name, class_name, attributes = [], associations = {})
     @instances_file.write "object #{instance_name}{\n"
     attributes.each do |attribute, value|
       if value.is_a?(Numeric) || value.is_a?(TrueClass) || value.is_a?(FalseClass)
@@ -81,14 +82,12 @@ class PlantumlWriter
       end
     end
     @instances_file.write "}\n\n"
-    associations.each do |x|
-
-    end
-
+    # associations.each do |x|
+    #
+    # end
   end
 
   def write_association(association_name, instance_name, foreign_instance_name)
     @instances_file.write "#{instance_name} o-- #{foreign_instance_name}\n"
   end
-
 end
