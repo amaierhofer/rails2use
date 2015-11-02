@@ -37,7 +37,7 @@ You can use multiple options in a comma separated way
 
 Using in Ruby:
 
-    require 'Rails2use'
+    require 'rails2use'
 
     Rails2use.extract! # default will extract the use file to rails_project/doc/gen/uml/output.use
 
